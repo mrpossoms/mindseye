@@ -3,15 +3,20 @@
 
 void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 {
-	vidi_rgb_t o[r][c];
-	memcpy(o, frame, sizeof(vidi_rgb_t) * r * c);
+	short o[r][c][3];
+	short f[r][c][3];
 
-	point_t frame_dim = {r, c};
+	dim_t frame_dim = {r, c, 3};
 
-	me_dc_dx(frame_dim, o, frame);
-	me_dc_dy(frame_dim, o, frame);
+	me_rgb_to_short(frame_dim, frame, o);
+	memset(f, 0, (sizeof(short) * 3) * r * c);
 
-	me_bias(frame_dim, frame, frame, (vidi_rgb_t){ 0, 32, 0}, (win_t){ 25, 25, 25, 25}); 
+	me_dc_dx(frame_dim, o, f);
+	me_dc_dy(frame_dim, o, f);
+
+	me_bias(frame_dim, f, f, (short[3]){ 128, 128, 128}, (win_t){ 0, 0, c, r}); 
+
+	me_short_to_rgb(frame_dim, f, frame);
 }
 
 

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define F_SIZE 11
+#define F_SIZE 7
 
 match_t last_match;
 vidi_rgb_t feature[F_SIZE][F_SIZE];
