@@ -1,5 +1,5 @@
 INC=-I./vidi.h/inc
-CFLAGS+=-g -O4
+CFLAGS+=-g -O0
 LINK+=-lglfw -lGL -lX11 -lXi -lXrandr -lXxf86vm -lXinerama -lXcursor -lrt -lm
 
 bin:

@@ -24,8 +24,9 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 	me_downsample(frame_dim, f, ds_dim, ds);
 
 	{ // compute first derivatives
-		short o[r][c][3];
-		memcpy(o, ds, (sizeof(short) * 3) * ds_dim.r * ds_dim.c);
+		short o[ds_dim.r][ds_dim.c][ds_dim.d];
+		memcpy(o, ds, sizeof(short) * ds_dim.r * ds_dim.c * ds_dim.d);
+		memset(ds, 0, sizeof(short) * ds_dim.r * ds_dim.c * ds_dim.d);
 		me_dc_dx(ds_dim, o, ds);
 		me_dc_dy(ds_dim, o, ds);		
 	}
@@ -37,7 +38,7 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 	// 	me_dc_dy(ds_dim, o, ds);		
 	// }
 
-	me_variance(ds_dim, (short[3]){128, 128, 128}, ds, ds);
+	//me_variance(ds_dim, (short[3]){128, 128, 128}, ds, ds);
 
 
 	if (frames < 10 || last_match.score > 1000)
@@ -64,7 +65,8 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 	last_match = match;
 
 
-	//me_bias(ds_dim, ds, ds, (short[3]){ 0, 64, 0}, match.win); 
+	me_bias(ds_dim, ds, ds, (short[3]){ 128, 128, 128}, (win_t){0, 0, ds_dim.c, ds_dim.r}); 
+	me_bias(ds_dim, ds, ds, (short[3]){ 0, 64, 0}, match.win); 
 
 	me_upsample(ds_dim, ds, frame_dim, f);
 	me_short_to_rgb(frame_dim, f, frame);

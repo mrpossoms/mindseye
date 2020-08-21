@@ -50,12 +50,12 @@ static void me_dc_dx(dim_t size, short in[size.r][size.c][size.d], short out[siz
 	for (int ri = 0; ri < size.r; ++ri)
 	{
 		int ri_n = ri + 1;
-		if (ri_n > size.r) { ri_n = size.r - 2; }
+		if (ri_n >= size.r) { ri_n = size.r - 2; }
 		for (int ci = 0; ci < size.c; ++ci)
 		{
 			int ci_n = ci + 1;
 
-			if (ci_n > size.c) { ci_n = size.c - 2; }
+			if (ci_n >= size.c) { ci_n = size.c - 2; }
 
 			for (int i = 0; i < size.d; i++)
 			{ // dc / dx 
@@ -72,6 +72,126 @@ static void me_dc_dy(dim_t size, short in[size.r][size.c][size.d], short out[siz
 	for (int ri = 0; ri < size.r; ++ri)
 	{
 		int ri_n = ri + 1;
+		if (ri_n >= size.r) { ri_n = size.r - 2;break; }
+		for (int ci = 0; ci < size.c; ++ci)
+		{
+			int ci_n = ci + 1;
+
+			if (ci_n >= size.c) { ci_n = size.c - 2; }
+
+			for (int i = 0; i < size.d; i++)
+			{ // dc / dy 
+				int dc = in[ri][ci][i] - in[ri_n][ci][i];
+				out[ri][ci][i] += dc / (ri_n - ri);
+			}
+		}
+	}
+}
+
+
+static void me_sub(dim_t size, short left[size.r][size.c][size.d], short right[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = left[r][c][d] - right[r][c][d];
+			}
+		}
+	}
+}
+
+
+static void me_add(dim_t size, short left[size.r][size.c][size.d], short right[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = left[r][c][d] + right[r][c][d];
+			}
+		}
+	}
+}
+
+
+
+static void me_mul(dim_t size, short left[size.r][size.c][size.d], short right[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = left[r][c][d] * right[r][c][d];
+			}
+		}
+	}
+}
+
+
+static void me_abs(dim_t size, short in[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = abs(in[r][c][d]);
+			}
+		}
+	}
+}
+
+
+static void me_mask(dim_t size, short in[size.r][size.c][size.d], short out[size.r][size.c][size.d], short mask[size.r][size.c][size.d], short tol)
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = mask[r][c][d] > tol ? in[r][c][d] : 0;
+			}
+		}
+	}
+}
+
+
+static void me_dc_dx_f(dim_t size, float in[size.r][size.c][size.d], float out[size.r][size.c][size.d])
+{
+	for (int ri = 0; ri < size.r; ++ri)
+	{
+		int ri_n = ri + 1;
+		if (ri_n > size.r) { ri_n = size.r - 2; }
+		for (int ci = 0; ci < size.c; ++ci)
+		{
+			int ci_n = ci + 1;
+
+			if (ci_n > size.c) { ci_n = size.c - 2; }
+
+			for (int i = 0; i < size.d; i++)
+			{ // dc / dx 
+				float dc = in[ri][ci][i] - in[ri][ci_n][i];
+				out[ri][ci][i] += dc / (float)(ci_n - ci);
+			}
+		}
+	}
+}
+
+
+static void me_dc_dy_f(dim_t size, float in[size.r][size.c][size.d], float out[size.r][size.c][size.d])
+{
+	for (int ri = 0; ri < size.r; ++ri)
+	{
+		int ri_n = ri + 1;
 		if (ri_n > size.r) { ri_n = size.r - 2; }
 		for (int ci = 0; ci < size.c; ++ci)
 		{
@@ -81,8 +201,8 @@ static void me_dc_dy(dim_t size, short in[size.r][size.c][size.d], short out[siz
 
 			for (int i = 0; i < size.d; i++)
 			{ // dc / dy 
-				int dc = in[ri][ci][i] - in[ri_n][ci][i];
-				out[ri][ci][i] += dc / (ri_n - ri);
+				float dc = in[ri][ci][i] - in[ri_n][ci][i];
+				out[ri][ci][i] += dc / (float)(ri_n - ri);
 			}
 		}
 	}
@@ -193,23 +313,23 @@ static void me_convolve(
 	short dst[sd.r][sd.c][sd.d],
 	dim_t kd, const float kern[kd.r][kd.c][kd.d])
 {
-	int h_kr = (kd.r - 1) >> 1;
-	int h_kc = (kd.c - 1) >> 1;
+	int h_kr = (kd.r) >> 1;
+	int h_kc = (kd.c) >> 1;
 
 	for (int r = 0; r < sd.r; r++)
 	for (int c = 0; c < sd.c; c++)
 	{
-		for (int kr = -h_kr; kr < h_kr; kr++)
-		for (int kc = -h_kc; kc < h_kc; kc++)
+		for (int kr = -h_kr; kr <= h_kr; kr++)
+		for (int kc = -h_kc; kc <= h_kc; kc++)
 		{
 			int samples = 0;
 			int ri = r + kr, ci = c + kc;
 
-			if (ri < 0 || ri >= r) { continue; }
-			if (ci < 0 || ci >= c) { continue; }
+			if (ri < 0 || ri >= sd.r) { continue; }
+			if (ci < 0 || ci >= sd.c) { continue; }
 
 			for (int d = 0; d < sd.d; d++)
-			dst[r][c][d] += src[ri][ci][d] * kern[ri + h_kr][ci + h_kc][d % kd.d]; 
+			dst[r][c][d] += src[ri][ci][d] * kern[kr + h_kr][kc + h_kc][d % kd.d]; 
 		}
 	}
 }
