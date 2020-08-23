@@ -7,71 +7,82 @@
 #define F_SIZE 7
 
 match_t last_match;
-short feature[F_SIZE][F_SIZE][3];
+MTYPE feature[3][F_SIZE][F_SIZE][3];
+
+MTYPE LAST[640 >> 1][480 >> 1][3];
 
 void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 {
 	static int frames;
 
 	const dim_t frame_dim = {r, c, 3};
-	const dim_t ds_dim = {r >> 2, c >> 2, 3};
+	const dim_t ds_dim = {r >> 1, c >> 1, 3};
 	const dim_t feat_dim = {F_SIZE, F_SIZE, 3};
 
-	short f[r][c][3];
-	short ds[ds_dim.r][ds_dim.c][3];
+	MTYPE full[r][c][3];
+	MTYPE ds[ds_dim.r][ds_dim.c][3];
+	MTYPE diff[ds_dim.r][ds_dim.c][3];
+	MTYPE grad[ds_dim.r][ds_dim.c][3];
 
-	me_rgb_to_short(frame_dim, frame, f);
-	me_downsample(frame_dim, f, ds_dim, ds);
+	me_rgb_to_MTYPE(frame_dim, frame, full);
+	me_downsample(frame_dim, full, ds_dim, ds);
 
 	{ // compute first derivatives
-		short o[ds_dim.r][ds_dim.c][ds_dim.d];
-		memcpy(o, ds, sizeof(short) * ds_dim.r * ds_dim.c * ds_dim.d);
-		memset(ds, 0, sizeof(short) * ds_dim.r * ds_dim.c * ds_dim.d);
-		me_dc_dx(ds_dim, o, ds);
-		me_dc_dy(ds_dim, o, ds);		
+		memset(grad, 0, sizeof(MTYPE) * ds_dim.r * ds_dim.c * ds_dim.d);
+		me_dc_dx(ds_dim, ds, grad);
+		me_dc_dy(ds_dim, ds, grad);		
 	}
 
-	// { // compute second derivaties
-	// 	vidi_rgb_t o[r][c];
-	// 	memcpy(o, ds, sizeof(vidi_rgb_t) * ds_dim.r * ds_dim.c);
-	// 	me_dc_dx(ds_dim, o, ds);
-	// 	me_dc_dy(ds_dim, o, ds);		
-	// }
-
-	//me_variance(ds_dim, (short[3]){128, 128, 128}, ds, ds);
+	// compute frame difference
+	me_sub(ds_dim, ds, LAST, diff);
+	me_abs(ds_dim, diff, diff);
 
 
-	if (frames < 10 || last_match.score > 1000)
+	// find the average center of motion
+	short tol[3] = {64, 64, 64};
+	point_t com = me_center_of_mass(ds_dim, diff, tol);
+	point_t min = com, max = com;
+
+	for (int r = 0; r < ds_dim.r; ++r)
 	{
-		me_patch(
-			ds_dim, ds,
-			(win_t){ (ds_dim.r >> 1) - F_SIZE/2, (ds_dim.c >> 1) - F_SIZE/2, F_SIZE, F_SIZE }, 
-			feature
-			);
+		for (int c = 0; c < ds_dim.c; ++c)
+		{
+			if (diff[r][c][1] > tol[1])
+			{
+				min.r = ME_MIN(min.r, r);
+				max.r = ME_MAX(max.r, r);
+				min.c = ME_MIN(min.c, c);
+				max.c = ME_MAX(max.c, c);		
+			}
+		}
 	}
-	else if (last_match.score > 50)
+
+	win_t movement = {min.r, min.c, max.c - min.c, max.r - min.r};
+
+	// find the strongest feature in that window
+	int hf = (F_SIZE - 1) >> 1;
+	for (int r = min.r; r < max.r; ++r)
+	for (int c = min.c; c < max.c; ++c)
 	{
-		me_patch(
-			ds_dim, ds,
-			last_match.win, 
-			feature
-			);	
+		for (int kr = -hf; kr <= hr; kr++)
+		for (int kc = -hf; kc <= hc; kr++)
+		{
+			int ri = r + kr, ci = c + kc;
+			if (ri < 0 || ri >= max.r) { continue; }
+			if (ci < 0 || ci >= max.c) { continue; }
+
+			// TODO compute score here
+		}
 	}
 
-	match_t match = me_match_feature(ds_dim, ds, feat_dim, feature, (win_t){0, 0, ds_dim.c, ds_dim.r});
-	match.score += pow(match.win.r - last_match.win.r, 2) + pow(match.win.c - last_match.win.c, 2);
+	// me_bias(ds_dim, ds, ds, (MTYPE[3]){ 128, 128, 128}, (win_t){0, 0, ds_dim.c, ds_dim.r}); 
+	me_bias(ds_dim, diff, diff, (MTYPE[3]){ 0, 64, 0}, movement); 
 
-	printf("score: %d (%d, %d)\n", match.score, match.win.r, match.win.c);
-	last_match = match;
-
-
-	me_bias(ds_dim, ds, ds, (short[3]){ 128, 128, 128}, (win_t){0, 0, ds_dim.c, ds_dim.r}); 
-	me_bias(ds_dim, ds, ds, (short[3]){ 0, 64, 0}, match.win); 
-
-	me_upsample(ds_dim, ds, frame_dim, f);
-	me_short_to_rgb(frame_dim, f, frame);
+	me_upsample(ds_dim, diff, frame_dim, full);
+	me_MTYPE_to_rgb(frame_dim, full, frame);
 
 	frames++;
+	memcpy(LAST, ds, sizeof(LAST));
 }
 
 

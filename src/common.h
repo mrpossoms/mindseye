@@ -6,6 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef MTYPE
+#define MTYPE short
+#endif
+
+typedef struct {
+	size_t r, c;
+} point_t;
+
 typedef struct {
 	size_t r, c, d;
 } dim_t;
@@ -22,7 +30,7 @@ typedef struct {
 #define ME_MIN(x, a) ((x) > (a) ? (a) : (x))
 #define ME_MAX(x, a) ((x) < (a) ? (a) : (x))
 
-static void me_rgb_to_short(dim_t size, vidi_rgb_t in[size.r][size.c], short out[size.r][size.c][3])
+static void me_rgb_to_MTYPE(dim_t size, vidi_rgb_t in[size.r][size.c], MTYPE out[size.r][size.c][3])
 {
 	for (int ri = 0; ri < size.r; ++ri)
 	for (int ci = 0; ci < size.c; ++ci)
@@ -34,7 +42,7 @@ static void me_rgb_to_short(dim_t size, vidi_rgb_t in[size.r][size.c], short out
 }
 
 
-static void me_short_to_rgb(dim_t size, short in[size.r][size.c][size.d], vidi_rgb_t out[size.r][size.c])
+static void me_MTYPE_to_rgb(dim_t size, MTYPE in[size.r][size.c][size.d], vidi_rgb_t out[size.r][size.c])
 {
 	for (int ri = 0; ri < size.r; ++ri)
 	for (int ci = 0; ci < size.c; ++ci)
@@ -45,7 +53,7 @@ static void me_short_to_rgb(dim_t size, short in[size.r][size.c][size.d], vidi_r
 }
 
 
-static void me_dc_dx(dim_t size, short in[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+static void me_dc_dx(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d])
 {
 	for (int ri = 0; ri < size.r; ++ri)
 	{
@@ -67,7 +75,7 @@ static void me_dc_dx(dim_t size, short in[size.r][size.c][size.d], short out[siz
 }
 
 
-static void me_dc_dy(dim_t size, short in[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+static void me_dc_dy(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d])
 {
 	for (int ri = 0; ri < size.r; ++ri)
 	{
@@ -89,7 +97,7 @@ static void me_dc_dy(dim_t size, short in[size.r][size.c][size.d], short out[siz
 }
 
 
-static void me_sub(dim_t size, short left[size.r][size.c][size.d], short right[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+static void me_sub(dim_t size, MTYPE left[size.r][size.c][size.d], MTYPE right[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d])
 {
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -104,7 +112,7 @@ static void me_sub(dim_t size, short left[size.r][size.c][size.d], short right[s
 }
 
 
-static void me_add(dim_t size, short left[size.r][size.c][size.d], short right[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+static void me_add(dim_t size, MTYPE left[size.r][size.c][size.d], MTYPE right[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d])
 {
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -120,7 +128,7 @@ static void me_add(dim_t size, short left[size.r][size.c][size.d], short right[s
 
 
 
-static void me_mul(dim_t size, short left[size.r][size.c][size.d], short right[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+static void me_mul(dim_t size, MTYPE left[size.r][size.c][size.d], MTYPE right[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d])
 {
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -135,7 +143,72 @@ static void me_mul(dim_t size, short left[size.r][size.c][size.d], short right[s
 }
 
 
-static void me_abs(dim_t size, short in[size.r][size.c][size.d], short out[size.r][size.c][size.d])
+static void me_scl(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d], MTYPE s[size.d])
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = in[r][c][d] * s[d];
+			}
+		}
+	}
+}
+
+
+static void me_scl_f(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d], float s[size.d])
+{
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				out[r][c][d] = in[r][c][d] * s[d];
+			}
+		}
+	}
+}
+
+
+static void me_max(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE max[size.d])
+{
+	for (int d = 0; d < size.d; ++d)	
+	max[d] = in[size.r][size.c][d];
+
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				max[d] = ME_MAX(in[r][c][d], max[d]);
+			}
+		}
+	}
+}
+
+
+static void me_min(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE min[size.d])
+{
+	for (int d = 0; d < size.d; ++d)	
+	min[d] = in[size.r][size.c][d];
+
+	for (int r = 0; r < size.r; ++r)
+	{
+		for (int c = 0; c < size.c; ++c)
+		{
+			for (int d = 0; d < size.d; ++d)
+			{ 
+				min[d] = ME_MIN(in[r][c][d], min[d]);
+			}
+		}
+	}
+}
+
+static void me_abs(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d])
 {
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -149,8 +222,30 @@ static void me_abs(dim_t size, short in[size.r][size.c][size.d], short out[size.
 	}
 }
 
+static point_t me_center_of_mass(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE tol[size.d])
+{
+	point_t com = {};
+	size_t samples = 0;
 
-static void me_mask(dim_t size, short in[size.r][size.c][size.d], short out[size.r][size.c][size.d], short mask[size.r][size.c][size.d], short tol)
+	for (int r = 0; r < size.r; ++r)
+	for (int c = 0; c < size.c; ++c)
+	for (int d = 0; d < size.d; ++d)
+	{ 
+		if (in[r][c][d] > tol[d])
+		{
+			com.r += r;
+			com.c += c;
+			samples++;					
+		}
+	}
+
+	com.r /= samples;
+	com.c /= samples;
+
+	return com;
+}
+
+static void me_mask(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[size.r][size.c][size.d], MTYPE mask[size.r][size.c][size.d], MTYPE tol)
 {
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -211,9 +306,9 @@ static void me_dc_dy_f(dim_t size, float in[size.r][size.c][size.d], float out[s
 
 static void me_variance(
 	dim_t dims, 
-	short mu[dims.d],
-	short in[dims.r][dims.c][dims.d],
-	short out[dims.r][dims.c][dims.d])
+	MTYPE mu[dims.d],
+	MTYPE in[dims.r][dims.c][dims.d],
+	MTYPE out[dims.r][dims.c][dims.d])
 {
 	for (int r = 0; r < dims.r; r++)
 	for (int c = 0; c < dims.c; c++)
@@ -229,8 +324,8 @@ static void me_variance(
 
 
 static void me_downsample(
-	dim_t sd, short src[sd.r][sd.c][sd.d],
-	dim_t dd, short dst[dd.r][dd.c][dd.d])
+	dim_t sd, MTYPE src[sd.r][sd.c][sd.d],
+	dim_t dd, MTYPE dst[dd.r][dd.c][dd.d])
 {
 	int src_r_per_dst_r = sd.r / dd.r;
 	int src_c_per_dst_c = sd.c / dd.c;
@@ -259,8 +354,8 @@ static void me_downsample(
 
 
 static void me_upsample(
-	dim_t sd, short src[sd.r][sd.c][sd.d],
-	dim_t dd, short dst[dd.r][dd.c][dd.d])
+	dim_t sd, MTYPE src[sd.r][sd.c][sd.d],
+	dim_t dd, MTYPE dst[dd.r][dd.c][dd.d])
 {
 	int dst_r_per_src_r = dd.r / sd.r;
 	int dst_c_per_src_c = dd.c / sd.c;
@@ -274,7 +369,7 @@ static void me_upsample(
 }
 
 
-static void me_patch(dim_t size, short src[size.r][size.c][size.d], win_t out_win, short out[out_win.h][out_win.w][size.d])
+static void me_patch(dim_t size, MTYPE src[size.r][size.c][size.d], win_t out_win, MTYPE out[out_win.h][out_win.w][size.d])
 {
 	for (int ri = 0; ri < out_win.h; ++ri)
 	for (int ci = 0; ci < out_win.w; ++ci)
@@ -285,7 +380,7 @@ static void me_patch(dim_t size, short src[size.r][size.c][size.d], win_t out_wi
 }
 
 
-static void me_blit(dim_t ds, short src[ds.r][ds.c][ds.d], dim_t dd, short dst[dd.r][dd.c][dd.d], win_t sw)
+static void me_blit(dim_t ds, MTYPE src[ds.r][ds.c][ds.d], dim_t dd, MTYPE dst[dd.r][dd.c][dd.d], win_t sw)
 {
 	for (int r = 0; r < sw.h; r++)
 	for (int c = 0; c < sw.w; c++)
@@ -296,7 +391,7 @@ static void me_blit(dim_t ds, short src[ds.r][ds.c][ds.d], dim_t dd, short dst[d
 }
 
 
-static void me_bias(dim_t dim, const short from[dim.r][dim.c][dim.d], short to[dim.r][dim.c][dim.d], short bias[dim.d], win_t win)
+static void me_bias(dim_t dim, const MTYPE from[dim.r][dim.c][dim.d], MTYPE to[dim.r][dim.c][dim.d], MTYPE bias[dim.d], win_t win)
 {
 	for(int ri = win.h; ri--;)
 	for(int ci = win.w; ci--;)
@@ -306,11 +401,47 @@ static void me_bias(dim_t dim, const short from[dim.r][dim.c][dim.d], short to[d
 	}
 }
 
+static void me_clamp(dim_t dim, const MTYPE from[dim.r][dim.c][dim.d], MTYPE to[dim.r][dim.c][dim.d], MTYPE min[dim.d], MTYPE max[dim.d])
+{
+	for(int ri = dim.r; ri--;)
+	for(int ci = dim.c; ci--;)
+	{
+		for (int di = 0; di < dim.d; di++)
+		to[ri][ci][di] = ME_MAX(min[di], ME_MIN(max[di], from[ri][ci][di]));
+	}
+}
 
 static void me_convolve(
 	dim_t sd,
-	const short src[sd.r][sd.c][sd.d],
-	short dst[sd.r][sd.c][sd.d],
+	const MTYPE src[sd.r][sd.c][sd.d],
+	MTYPE dst[sd.r][sd.c][sd.d],
+	dim_t kd, const MTYPE kern[kd.r][kd.c][kd.d])
+{
+	int h_kr = (kd.r) >> 1;
+	int h_kc = (kd.c) >> 1;
+
+	for (int r = 0; r < sd.r; r++)
+	for (int c = 0; c < sd.c; c++)
+	{
+		for (int kr = -h_kr; kr <= h_kr; kr++)
+		for (int kc = -h_kc; kc <= h_kc; kc++)
+		{
+			int samples = 0;
+			int ri = r + kr, ci = c + kc;
+
+			if (ri < 0 || ri >= sd.r) { continue; }
+			if (ci < 0 || ci >= sd.c) { continue; }
+
+			for (int d = 0; d < sd.d; d++)
+			dst[r][c][d] += src[ri][ci][d] * kern[kr + h_kr][kc + h_kc][d % kd.d]; 
+		}
+	}
+}
+
+static void me_convolve_f(
+	dim_t sd,
+	const MTYPE src[sd.r][sd.c][sd.d],
+	MTYPE dst[sd.r][sd.c][sd.d],
 	dim_t kd, const float kern[kd.r][kd.c][kd.d])
 {
 	int h_kr = (kd.r) >> 1;
@@ -337,9 +468,9 @@ static void me_convolve(
 
 match_t me_match_feature(
 	const dim_t fd,
-	short frame[fd.r][fd.c][fd.d],
+	MTYPE frame[fd.r][fd.c][fd.d],
 	const dim_t feat_size,
-	short feature[feat_size.r][feat_size.c][fd.d],
+	MTYPE feature[feat_size.r][feat_size.c][fd.d],
 	win_t search_win)
 {
 	match_t match = { .score = 256 * feat_size.r * feat_size.c };
