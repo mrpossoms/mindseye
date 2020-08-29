@@ -27,6 +27,11 @@ typedef struct {
 	int score;
 } match_t;
 
+typedef stuct {
+	int dr, dc;
+	int score;
+} flow_t;
+
 #define ME_MIN(x, a) ((x) > (a) ? (a) : (x))
 #define ME_MAX(x, a) ((x) < (a) ? (a) : (x))
 
@@ -510,6 +515,43 @@ match_t me_match_feature(
 	return match;
 }
 
+typedef struct {
+	size_t kernel_size;
+	win_t search_win
+} flow_opts_t;
 
+void me_flow(dim_t d, MTYPE f0[d.r][d.c][d.d], MTYPE f1[d.r][d.c][d.d], dim_t fd, flow_t flow[fd.r][fd.c], const flow_opts_t opts)
+{
+	size_t ks = opts.kernel_size;
+	size_t swh_h = search_win.h >> 1, sww_h = search_win.w >> 1;
+	MTYPE feat[ks][ks][d.d];
+
+	win_t sampling_win = { swh_h, sww_h, d.c - sww_h, d.r - swh_h };
+
+	const int frame_per_flow_r = d.r / fd.r;
+	const int frame_per_flow_c = d.c / fd.c;
+
+	for (int r = 0; r < fd.r; r++)
+	for (int c = 0; c < fd.c; c++)
+	{
+		int ri = frame_per_flow_r * r;
+		int ci = frame_per_flow_c * c;
+
+		// static void me_patch(dim_t size, MTYPE src[size.r][size.c][size.d], win_t out_win, MTYPE out[out_win.h][out_win.w][size.d])
+		// TODO extract a patch from f0
+		me_patch(d, f0, (win_t){ri-swh_h, ci-sww_h, ks, ks}, feat);	
+
+		// TODO match that patch in a search window centered on ri, ci
+		win_t win = opts.search_win;
+		win.r = ri - (win.h >> 1);
+		win.c = ci - (win.w >> 1);
+		match_t m = me_match_feature(d, f1, (dim_t){ks, ks, d.d}, feature, win);
+
+		// TODO compute displacement to match, record score
+		flow[r][c].dr = m.r - ri;
+		flow[r][c].dc = m.c - ci;
+		flow[r][c].score = m.score;
+	}
+}
 
 #endif
