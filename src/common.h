@@ -244,8 +244,11 @@ static point_t me_center_of_mass(dim_t size, MTYPE in[size.r][size.c][size.d], M
 		}
 	}
 
-	com.r /= samples;
-	com.c /= samples;
+	if (samples > 0)
+	{
+		com.r /= samples;
+		com.c /= samples;		
+	}
 
 	return com;
 }
@@ -479,6 +482,11 @@ match_t me_match_feature(
 	win_t search_win)
 {
 	match_t match = { .score = 256 * feat_size.r * feat_size.c };
+
+	if (search_win.w == 0 && search_win.h == 0)
+	{
+		search_win = (win_t){0, 0, fd.c, fd.r};
+	}
 
 	int feat_hr = (feat_size.r - 1) / 2; 
 	int feat_hc = (feat_size.c - 1) / 2; 

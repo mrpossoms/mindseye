@@ -1,0 +1,3 @@
+[submodule "vidi.h"]
+	path = vidi.h
+	url = git@github.com:mrpossoms/vidi.h.git

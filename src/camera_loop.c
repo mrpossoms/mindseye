@@ -66,7 +66,7 @@ void camera_loop(const size_t r, const size_t c, const char* cam_path, void (*pr
 	vidi_cfg_t cam = {
 		.width = FRAME_W,
 		.height = FRAME_H,
-		.frames_per_sec = 30,
+		.frames_per_sec = 60,
 		.path = cam_path,
 		.pixel_format = V4L2_PIX_FMT_YUYV
 	};
