@@ -36,6 +36,10 @@ typedef struct {
 #define ME_MIN(x, a) ((x) > (a) ? (a) : (x))
 #define ME_MAX(x, a) ((x) < (a) ? (a) : (x))
 
+#define ME_EACH(M_DIMS, R, C, M) \
+for (int R = 0; R < (M_DIMS).r; R++)\
+for (int C = 0; C < (M_DIMS).c; C++)\
+
 static void me_rgb_to_MTYPE(dim_t size, vidi_rgb_t in[size.r][size.c], MTYPE out[size.r][size.c][3])
 {
 	for (int ri = 0; ri < size.r; ++ri)
@@ -313,25 +317,6 @@ static void me_dc_dy_f(dim_t size, float in[size.r][size.c][size.d], float out[s
 }
 
 
-static void me_variance(
-	dim_t dims, 
-	MTYPE mu[dims.d],
-	MTYPE in[dims.r][dims.c][dims.d],
-	MTYPE out[dims.r][dims.c][dims.d])
-{
-	for (int r = 0; r < dims.r; r++)
-	for (int c = 0; c < dims.c; c++)
-	{
-		int delta[dims.d];
-		for (int i = dims.d; i--;)
-		{
-			delta[i] = in[r][c][i] - mu[i];
-			out[r][c][i] = ME_MIN(sqrt(delta[i] * delta[i]), 255);
-		}
-	}
-}
-
-
 static void me_downsample(
 	dim_t sd, MTYPE src[sd.r][sd.c][sd.d],
 	dim_t dd, MTYPE dst[dd.r][dd.c][dd.d])
@@ -419,6 +404,60 @@ static void me_clamp(dim_t dim, const MTYPE from[dim.r][dim.c][dim.d], MTYPE to[
 		to[ri][ci][di] = ME_MAX(min[di], ME_MIN(max[di], from[ri][ci][di]));
 	}
 }
+
+
+static void me_kernel_variance(
+	dim_t sd,
+	const MTYPE src[sd.r][sd.c][sd.d],
+	MTYPE dst[sd.r][sd.c][sd.d],
+	dim_t kd)
+{
+	int h_kr = (kd.r) >> 1;
+	int h_kc = (kd.c) >> 1;
+
+	for (int r = 0; r < sd.r; r++)
+	for (int c = 0; c < sd.c; c++)
+	{
+		MTYPE mu[sd.d];
+		int samples = 0;
+		memset(mu, 0, sizeof(MTYPE) * sd.d);
+
+		// compute average, mu
+		for (int kr = -h_kr; kr <= h_kr; kr++)
+		for (int kc = -h_kc; kc <= h_kc; kc++)
+		{
+			int ri = r + kr, ci = c + kc;
+			if (ri < 0 || ri >= sd.r) { continue; }
+			if (ci < 0 || ci >= sd.c) { continue; }
+
+			for (int d = 0; d < sd.d; d++) { mu[d] += src[ri][ci][d]; }
+			samples =+ 1;
+		}
+
+		if (samples > 0)
+		{
+			for (int d = 0; d < sd.d; d++)
+			{
+				mu[d] /= samples;
+			}
+
+			for (int kr = -h_kr; kr <= h_kr; kr++)
+			for (int kc = -h_kc; kc <= h_kc; kc++)
+			{
+				int ri = r + kr, ci = c + kc;
+				if (ri < 0 || ri >= sd.r) { continue; }
+				if (ci < 0 || ci >= sd.c) { continue; }
+
+				for (int d = 0; d < sd.d; d++)
+				{
+					MTYPE delta = src[ri][ci][d] - mu[d];
+					dst[ri][ci][d] = delta * delta;
+				}
+			}			
+		}
+	}
+}
+
 
 static void me_convolve(
 	dim_t sd,
