@@ -565,7 +565,7 @@ static inline match_t me_match_feature(
 
 typedef struct {
 	size_t kernel_size;
-	win_t search_win
+	win_t search_win;
 } flow_opts_t;
 
 void me_flow(dim_t d, MTYPE f0[d.r][d.c][d.d], MTYPE f1[d.r][d.c][d.d], dim_t fd, flow_t flow[fd.r][fd.c], const flow_opts_t opts)
