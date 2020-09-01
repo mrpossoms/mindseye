@@ -12,7 +12,7 @@ dim_t feat_dim = { F_SIZE, F_SIZE, 3 };
 MTYPE feature [F_COUNT][F_SIZE][F_SIZE][3];
 bool feature_valid = false;
 
-MTYPE LAST[640 >> 1][480 >> 1][3];
+MTYPE LAST[640 >> 6][480 >> 6][3];
 
 void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 {
@@ -20,15 +20,17 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 
 	const dim_t frame_dim = {r, c, 3};
 	const dim_t ds_dim = {r >> 1, c >> 1, 3};
+	const dim_t ds_diff_dim = {r >> 6, c >> 6, 3};
 	const dim_t feat_dim = {F_SIZE, F_SIZE, 3};
 
 	MTYPE full[r][c][3];
 	MTYPE ds[ds_dim.r][ds_dim.c][3];
-	MTYPE diff[ds_dim.r][ds_dim.c][3];
+	MTYPE diff[ds_diff_dim.r][ds_diff_dim.c][3];
 	MTYPE grad[ds_dim.r][ds_dim.c][3];
 
 	me_rgb_to_MTYPE(frame_dim, frame, full);
 	me_downsample(frame_dim, full, ds_dim, ds);
+	me_downsample(ds_dim, ds, ds_diff_dim, diff);
 
 	{ // compute first derivatives
 		memset(grad, 0, sizeof(MTYPE) * ds_dim.r * ds_dim.c * ds_dim.d);
@@ -37,7 +39,7 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 	}
 
 	// compute frame difference
-	me_sub(ds_dim, ds, LAST, diff);
+	me_sub(ds_dim, diff, LAST, diff);
 	me_abs(ds_dim, diff, diff);
 
 
