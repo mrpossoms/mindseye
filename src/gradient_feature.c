@@ -14,6 +14,19 @@ bool feature_valid = false;
 
 MTYPE LAST[640 >> 6][480 >> 6][3];
 
+win_t idx_to_win(dim_t full_dim, dim_t ds_dim, point_t idx)
+{
+	int full_r_per_ds_r = full_dim.r / ds_dim.r;
+	int full_c_per_ds_c = full_dim.c / ds_dim.c;
+
+	return (win_t) {
+		idx.r * full_r_per_ds_r,
+		idx.c * full_c_per_ds_c,
+		full_c_per_ds_c,
+		full_r_per_ds_r
+	};
+}
+
 void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 {
 	static int frames;
@@ -25,25 +38,28 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 
 	MTYPE full[r][c][3];
 	MTYPE ds[ds_dim.r][ds_dim.c][3];
+	MTYPE ds_red[ds_diff_dim.r][ds_diff_dim.c][3];
 	MTYPE diff[ds_diff_dim.r][ds_diff_dim.c][3];
 	MTYPE grad[ds_dim.r][ds_dim.c][3];
 
 	me_rgb_to_MTYPE(frame_dim, frame, full);
 	me_downsample(frame_dim, full, ds_dim, ds);
-	me_downsample(ds_dim, ds, ds_diff_dim, diff);
+	me_downsample(frame_dim, full, ds_diff_dim, ds_red);
 
+/*
 	{ // compute first derivatives
 		memset(grad, 0, sizeof(MTYPE) * ds_dim.r * ds_dim.c * ds_dim.d);
 		me_dc_dx(ds_dim, ds, grad);
 		me_dc_dy(ds_dim, ds, grad);		
 	}
-
+*/
 	// compute frame difference
-	me_sub(ds_dim, diff, LAST, diff);
-	me_abs(ds_dim, diff, diff);
+	me_sub(ds_diff_dim, ds_red, LAST, diff);
+	me_abs(ds_diff_dim, diff, diff);
 
 
 	// find the average center of motion
+	/*
 	short tol[3] = {64, 64, 64};
 	point_t com = me_center_of_mass(ds_dim, diff, tol);
 	point_t min = com, max = com;
@@ -137,13 +153,13 @@ void process(size_t r, size_t c, vidi_rgb_t frame[r][c])
 
 	// me_bias(ds_dim, ds, ds, (MTYPE[3]){ 128, 128, 128}, (win_t){0, 0, ds_dim.c, ds_dim.r}); 
 	me_bias(ds_dim, diff, diff, (MTYPE[3]){ 0, 64, 0}, movement); 
+*/
 
-
-	me_upsample(ds_dim, diff, frame_dim, full);
+	me_upsample(ds_diff_dim, diff, frame_dim, full);
 	me_MTYPE_to_rgb(frame_dim, full, frame);
 
 	frames++;
-	memcpy(LAST, ds, sizeof(LAST));
+	memcpy(LAST, ds_red, sizeof(LAST));
 }
 
 
