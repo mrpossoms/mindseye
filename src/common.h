@@ -183,10 +183,10 @@ static void me_scl_f(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE out[siz
 }
 
 
-static void me_max(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE max[size.d])
+static void me_max(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE max_out[size.d])
 {
 	for (int d = 0; d < size.d; ++d)	
-	max[d] = in[size.r][size.c][d];
+	max_out[d] = in[size.r][size.c][d];
 
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -194,17 +194,17 @@ static void me_max(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE max[size.
 		{
 			for (int d = 0; d < size.d; ++d)
 			{ 
-				max[d] = ME_MAX(in[r][c][d], max[d]);
+				max_out[d] = ME_MAX(in[r][c][d], max_out[d]);
 			}
 		}
 	}
 }
 
 
-static void me_min(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE min[size.d])
+static void me_min(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE min_out[size.d])
 {
 	for (int d = 0; d < size.d; ++d)	
-	min[d] = in[size.r][size.c][d];
+	min_out[d] = in[size.r][size.c][d];
 
 	for (int r = 0; r < size.r; ++r)
 	{
@@ -212,7 +212,7 @@ static void me_min(dim_t size, MTYPE in[size.r][size.c][size.d], MTYPE min[size.
 		{
 			for (int d = 0; d < size.d; ++d)
 			{ 
-				min[d] = ME_MIN(in[r][c][d], min[d]);
+				min_out[d] = ME_MIN(in[r][c][d], min_out[d]);
 			}
 		}
 	}
@@ -394,6 +394,7 @@ static void me_bias(dim_t dim, const MTYPE from[dim.r][dim.c][dim.d], MTYPE to[d
 		to[win.r+ri][win.c+ci][di] = from[win.r+ri][win.c+ci][di] + bias[di];
 	}
 }
+
 
 static void me_clamp(dim_t dim, const MTYPE from[dim.r][dim.c][dim.d], MTYPE to[dim.r][dim.c][dim.d], MTYPE min[dim.d], MTYPE max[dim.d])
 {
