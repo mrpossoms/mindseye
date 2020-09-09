@@ -1,6 +1,6 @@
 INC=-I./vidi.h/inc
 CFLAGS+=-g -O3
-LINK+=-lglfw -lGL -lX11 -lXi -lXrandr -lXxf86vm -lXinerama -lXcursor -lrt -lm
+LINK+=-lglfw -lGL -lX11 -lXi -lXrandr -lXxf86vm -lXinerama -lXcursor -lrt -lm -lavcodec -lavutil
 
 bin:
 	mkdir bin
